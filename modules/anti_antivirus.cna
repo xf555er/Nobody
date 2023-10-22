@@ -1,0 +1,9 @@
+menu "免杀系列" {
+	item "关闭asmi"{
+		
+	}
+	
+	item "关闭etw"{
+	
+	}
+}

@@ -1,0 +1,30 @@
+<Task xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Date>2023-09-28T23:16:38.6189907</Date>
+    <Author>DESKTOP-BBNU9HG\hasee</Author>
+    <Description>this is task</Description>
+    <URI>\Explorer\test</URI>
+  </RegistrationInfo>			
+  <Triggers>
+    <TimeTrigger>
+      <StartBoundary>2023-09-29T23:08:24</StartBoundary>
+      <Enabled>true</Enabled>
+    </TimeTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <UserId>DESKTOP-BBNU9HG\hasee</UserId>
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>LeastPrivilege</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+  </Settings>
+  <Actions>
+    <Exec>
+      <Command>notepad.exe</Command>
+    </Exec>
+  </Actions>
+</Task>

